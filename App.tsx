@@ -19,7 +19,7 @@ function App() {
   const handLandmarkerRef = useRef<HandLandmarker | null>(null);
   // We use a ref for hand state to avoid re-rendering the React tree 60fps, 
   // instead passing it to Three.js loop
-  const handStateRef = useRef<HandState>({ detected: false, x: 0, y: 0 });
+  const handStateRef = useRef<HandState>({ detected: false, x: 0, y: 0, pinchDistance: 0 });
 
   // --- Initialization ---
   useEffect(() => {
@@ -84,19 +84,18 @@ function App() {
           const x = (lm[9].x - 0.5) * 2;
           const y = (lm[9].y - 0.5) * 2;
           
-          handStateRef.current = {
-             detected: true,
-             x: x, 
-             y: y 
-          };
-          
-          // Basic Gesture Detection (Pinch)
+          // Calculate Pinch Distance (Thumb Tip #4 to Index Tip #8)
           const thumbTip = lm[4];
           const indexTip = lm[8];
           const dist = Math.hypot(thumbTip.x - indexTip.x, thumbTip.y - indexTip.y);
-          if (dist < 0.05) {
-             // Could trigger grab action here
-          }
+
+          handStateRef.current = {
+             detected: true,
+             x: x, 
+             y: y,
+             pinchDistance: dist
+          };
+          
         } else {
           handStateRef.current = { ...handStateRef.current, detected: false };
         }

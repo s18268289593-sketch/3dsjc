@@ -227,21 +227,43 @@ export const ProductScene = ({
   
   useFrame((state, delta) => {
     if (mainGroupRef.current) {
-      const { detected, x, y } = handState.current;
+      const { detected, x, y, pinchDistance } = handState.current;
       
       if (detected) {
-        // Rotate entire scene based on hand
+        // --- Rotation Logic ---
         const targetRotY = x * Math.PI * 0.5;
         const targetRotX = y * Math.PI * 0.2;
         
         mainGroupRef.current.rotation.y += (targetRotY - mainGroupRef.current.rotation.y) * 2 * delta;
         mainGroupRef.current.rotation.x += (targetRotX - mainGroupRef.current.rotation.x) * 2 * delta;
+
+        // --- Scale Logic (Pinch to Zoom) ---
+        // Typical pinchDistance is roughly 0.02 (closed) to 0.20 (open), depending on distance from camera.
+        // We map this range to a scale factor.
+        if (pinchDistance !== undefined) {
+           const minPinch = 0.02; // Fingers touching
+           const maxPinch = 0.15; // Fingers wide open
+           
+           // Clamp input to expected range and normalize 0..1
+           const normalizedInput = THREE.MathUtils.clamp((pinchDistance - minPinch) / (maxPinch - minPinch), 0, 1);
+           
+           // Map to target scale: Smallest 0.6x, Largest 1.8x
+           const targetScale = 0.6 + (normalizedInput * 1.2); 
+
+           const currentScale = mainGroupRef.current.scale;
+           
+           // Smoothly interpolate scale
+           currentScale.lerp(new THREE.Vector3(targetScale, targetScale, targetScale), delta * 5);
+        }
+
       } else {
         // Auto rotate if no hand
         if (mode === 'PRODUCT') {
           mainGroupRef.current.rotation.y += 0.2 * delta;
           mainGroupRef.current.rotation.x = THREE.MathUtils.lerp(mainGroupRef.current.rotation.x, 0, delta);
         }
+        // Reset scale gently when hand is lost
+        mainGroupRef.current.scale.lerp(new THREE.Vector3(1, 1, 1), delta * 2);
       }
     }
   });
