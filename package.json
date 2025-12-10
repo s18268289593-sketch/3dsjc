@@ -1,5 +1,5 @@
 {
-  "name": "grand-luxury-product-showcase",
+  "name": "grand-luxury-showcase",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -9,17 +9,19 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "react": "^19.2.1",
-    "react-dom": "^19.2.1",
-    "@react-three/fiber": "^9.4.2",
-    "@react-three/drei": "^10.7.7",
-    "three": "^0.181.2",
-    "@mediapipe/tasks-vision": "^0.10.22-rc.20250304"
+    "@mediapipe/tasks-vision": "^0.10.3",
+    "@react-three/drei": "^9.88.0",
+    "@react-three/fiber": "^8.15.11",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "three": "^0.160.0"
   },
   "devDependencies": {
-    "@types/node": "^22.14.0",
-    "@vitejs/plugin-react": "^5.0.0",
-    "typescript": "~5.8.2",
-    "vite": "^6.2.0"
+    "@types/react": "^18.2.37",
+    "@types/react-dom": "^18.2.15",
+    "@types/three": "^0.160.0",
+    "@vitejs/plugin-react": "^4.2.0",
+    "typescript": "^5.2.2",
+    "vite": "^5.0.0"
   }
 }
