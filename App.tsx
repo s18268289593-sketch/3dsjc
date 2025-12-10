@@ -13,12 +13,11 @@ function App() {
   const [music, setMusic] = useState<MusicItem | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [modelUrl, setModelUrl] = useState<string | null>(null);
+  const [backgroundUrl, setBackgroundUrl] = useState<string | null>(null);
   const [lighting, setLighting] = useState<LightingMode>('studio');
   
   const audioRef = useRef<HTMLAudioElement>(new Audio());
   const handLandmarkerRef = useRef<HandLandmarker | null>(null);
-  // We use a ref for hand state to avoid re-rendering the React tree 60fps, 
-  // instead passing it to Three.js loop
   const handStateRef = useRef<HandState>({ detected: false, x: 0, y: 0, pinchDistance: 0 });
 
   // --- Initialization ---
@@ -38,6 +37,11 @@ function App() {
       const savedModel = await AppDB.loadModel();
       if (savedModel) {
         setModelUrl(savedModel);
+      }
+
+      const savedBg = await AppDB.loadBackground();
+      if (savedBg) {
+        setBackgroundUrl(savedBg);
       }
     };
     initApp();
@@ -80,11 +84,9 @@ function App() {
         
         if (result.landmarks && result.landmarks.length > 0) {
           const lm = result.landmarks[0];
-          // Normalized Coordinates (-1 to 1)
           const x = (lm[9].x - 0.5) * 2;
           const y = (lm[9].y - 0.5) * 2;
           
-          // Calculate Pinch Distance (Thumb Tip #4 to Index Tip #8)
           const thumbTip = lm[4];
           const indexTip = lm[8];
           const dist = Math.hypot(thumbTip.x - indexTip.x, thumbTip.y - indexTip.y);
@@ -155,9 +157,23 @@ function App() {
       reader.onload = async (ev) => {
         if (ev.target?.result) {
           const data = ev.target.result as string;
-          // Optimistically update state and save to DB
           setModelUrl(data);
           await AppDB.saveModel(data);
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleBackgroundUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = async (ev) => {
+        if (ev.target?.result) {
+          const data = ev.target.result as string;
+          setBackgroundUrl(data);
+          await AppDB.saveBackground(data);
         }
       };
       reader.readAsDataURL(file);
@@ -182,7 +198,7 @@ function App() {
   };
 
   const clearData = async () => {
-    if (window.confirm("Clear all photos, music, and custom models?")) {
+    if (window.confirm("Reset all settings (photos, music, models, background)?")) {
       await AppDB.clear();
       window.location.reload();
     }
@@ -199,6 +215,7 @@ function App() {
         onUploadPhotos={handlePhotoUpload}
         onUploadMusic={handleMusicUpload}
         onUploadModel={handleModelUpload}
+        onUploadBackground={handleBackgroundUpload}
         onClearData={clearData}
         musicName={music?.name || null}
         isPlaying={isPlaying}
@@ -213,6 +230,7 @@ function App() {
           photos={photos} 
           handState={handStateRef}
           modelUrl={modelUrl}
+          backgroundUrl={backgroundUrl}
           onPhotoClick={() => {}}
           lighting={lighting}
         />

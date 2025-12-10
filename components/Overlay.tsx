@@ -9,6 +9,7 @@ interface OverlayProps {
   onUploadPhotos: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onUploadMusic: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onUploadModel: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onUploadBackground: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onClearData: () => void;
   musicName: string | null;
   isPlaying: boolean;
@@ -18,7 +19,7 @@ interface OverlayProps {
 }
 
 export const Overlay: React.FC<OverlayProps> = ({
-  mode, setMode, isCameraActive, toggleCamera, onUploadPhotos, onUploadMusic, onUploadModel, onClearData, musicName, isPlaying, toggleMusic, lighting, toggleLighting
+  mode, setMode, isCameraActive, toggleCamera, onUploadPhotos, onUploadMusic, onUploadModel, onUploadBackground, onClearData, musicName, isPlaying, toggleMusic, lighting, toggleLighting
 }) => {
   return (
     <div className="absolute inset-0 z-10 pointer-events-none flex flex-col justify-between p-6">
@@ -64,6 +65,11 @@ export const Overlay: React.FC<OverlayProps> = ({
           <input id="music-upload" type="file" accept="audio/*" onChange={onUploadMusic} className="hidden" />
           <span className="text-[9px] text-[#d4af37]/50 uppercase tracking-wider">Right click to change song</span>
         </div>
+
+        <label className="px-4 py-2 border border-[#d4af37]/40 bg-black/40 text-[#d4af37] backdrop-blur-md text-xs uppercase tracking-widest hover:bg-[#d4af37] hover:text-black transition-all cursor-pointer min-w-[140px] text-center">
+          Upload Scene
+          <input type="file" accept="image/*" onChange={onUploadBackground} className="hidden" />
+        </label>
 
         <label className="px-4 py-2 border border-[#d4af37]/40 bg-black/40 text-[#d4af37] backdrop-blur-md text-xs uppercase tracking-widest hover:bg-[#d4af37] hover:text-black transition-all cursor-pointer min-w-[140px] text-center">
           Upload Photos

@@ -1,11 +1,10 @@
 import React, { useRef, useEffect, useState, useMemo, Suspense } from 'react';
-import { useFrame, useThree } from '@react-three/fiber';
+import { useFrame, useThree, useLoader } from '@react-three/fiber';
 import { Float, PerspectiveCamera, Stars, Gltf, Center, OrbitControls, Resize, Environment } from '@react-three/drei';
 import * as THREE from 'three';
 import { AppMode, PhotoItem, HandState, LightingMode } from '../types';
 
 // Fix for missing JSX types in current environment
-// Augmenting both React's JSX namespace and global JSX namespace to ensure compatibility
 declare module 'react' {
   namespace JSX {
     interface IntrinsicElements {
@@ -51,7 +50,6 @@ declare global {
 }
 
 // --- Placeholder for your 3D Product ---
-// Used when no custom model is loaded
 const ProductPlaceholder = () => {
   return (
     <group>
@@ -102,6 +100,14 @@ const UserProduct = ({ url }: { url: string }) => {
   );
 };
 
+// --- Background Loader Component ---
+const CustomBackground = ({ url }: { url: string }) => {
+  const texture = useLoader(THREE.TextureLoader, url);
+  texture.mapping = THREE.EquirectangularReflectionMapping;
+  texture.colorSpace = THREE.SRGBColorSpace;
+  return <Environment background map={texture} />;
+};
+
 // --- Floating Photos ---
 const PhotoCloud = ({ photos, mode, focusTarget }: { photos: PhotoItem[], mode: AppMode, focusTarget: number | null }) => {
   const meshRefs = useRef<THREE.Mesh[]>([]);
@@ -145,7 +151,6 @@ const PhotoCloud = ({ photos, mode, focusTarget }: { photos: PhotoItem[], mode: 
 
       } else if (mode === 'SCATTER') {
         // Random floating
-        // Use deterministic random based on index
         const seed = i * 133.7;
         const r = 18 + Math.sin(seed) * 5;
         targetPos.set(
@@ -190,7 +195,7 @@ const PhotoCloud = ({ photos, mode, focusTarget }: { photos: PhotoItem[], mode: 
              position={[0,0,0]}
              onClick={(e) => {
                e.stopPropagation();
-               // Handle click in parent logic ideally, but for visual effect:
+               // Handle click if needed
              }}
            >
              <boxGeometry args={[1.6, 1.2, 0.05]} />
@@ -213,6 +218,7 @@ export const ProductScene = ({
   photos, 
   handState,
   modelUrl,
+  backgroundUrl,
   onPhotoClick,
   lighting
 }: { 
@@ -220,6 +226,7 @@ export const ProductScene = ({
   photos: PhotoItem[]; 
   handState: React.MutableRefObject<HandState>;
   modelUrl?: string | null;
+  backgroundUrl?: string | null;
   onPhotoClick: (index: number) => void;
   lighting: LightingMode;
 }) => {
@@ -238,21 +245,14 @@ export const ProductScene = ({
         mainGroupRef.current.rotation.x += (targetRotX - mainGroupRef.current.rotation.x) * 2 * delta;
 
         // --- Scale Logic (Pinch to Zoom) ---
-        // Typical pinchDistance is roughly 0.02 (closed) to 0.20 (open), depending on distance from camera.
-        // We map this range to a scale factor.
         if (pinchDistance !== undefined) {
-           const minPinch = 0.02; // Fingers touching
-           const maxPinch = 0.15; // Fingers wide open
+           const minPinch = 0.02; 
+           const maxPinch = 0.15; 
            
-           // Clamp input to expected range and normalize 0..1
            const normalizedInput = THREE.MathUtils.clamp((pinchDistance - minPinch) / (maxPinch - minPinch), 0, 1);
-           
-           // Map to target scale: Smallest 0.6x, Largest 1.8x
            const targetScale = 0.6 + (normalizedInput * 1.2); 
 
            const currentScale = mainGroupRef.current.scale;
-           
-           // Smoothly interpolate scale
            currentScale.lerp(new THREE.Vector3(targetScale, targetScale, targetScale), delta * 5);
         }
 
@@ -262,7 +262,7 @@ export const ProductScene = ({
           mainGroupRef.current.rotation.y += 0.2 * delta;
           mainGroupRef.current.rotation.x = THREE.MathUtils.lerp(mainGroupRef.current.rotation.x, 0, delta);
         }
-        // Reset scale gently when hand is lost
+        // Reset scale
         mainGroupRef.current.scale.lerp(new THREE.Vector3(1, 1, 1), delta * 2);
       }
     }
@@ -272,7 +272,6 @@ export const ProductScene = ({
     <>
       <PerspectiveCamera makeDefault position={[0, 2, 25]} fov={50} />
       
-      {/* Enables Mouse/Touch Interaction for Zooming and Orbiting */}
       <OrbitControls 
         makeDefault 
         enablePan={false} 
@@ -282,21 +281,23 @@ export const ProductScene = ({
         dampingFactor={0.05}
       />
       
-      {/* Environment Lighting for Realistic PBR Reflection */}
       <Suspense fallback={null}>
-        <Environment preset={lighting} background={false} />
+        {backgroundUrl ? (
+          <CustomBackground url={backgroundUrl} />
+        ) : (
+          <>
+            <Environment preset={lighting} background={false} />
+            <Stars radius={100} depth={50} count={5000} factor={4} saturation={0} fade speed={1} />
+          </>
+        )}
       </Suspense>
 
-      {/* Auxiliary Lights (Softer now that Environment is active) */}
       <ambientLight intensity={0.2} />
       <hemisphereLight intensity={0.3} color="#ffffff" groundColor="#444444" />
       <pointLight position={[10, 10, 10]} intensity={1.5} color="#ffd700" castShadow />
       <pointLight position={[-10, -5, -10]} intensity={1} color="#64ffda" />
       <spotLight position={[0, 50, 0]} angle={0.3} penumbra={1} intensity={800} castShadow />
 
-      <Stars radius={100} depth={50} count={5000} factor={4} saturation={0} fade speed={1} />
-      
-      {/* Main Content */}
       <group ref={mainGroupRef}>
         {modelUrl ? <UserProduct url={modelUrl} /> : <ProductPlaceholder />}
         <PhotoCloud photos={photos} mode={mode} focusTarget={null} />

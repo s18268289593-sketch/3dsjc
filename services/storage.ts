@@ -1,7 +1,7 @@
 import { PhotoItem, MusicItem } from '../types';
 
 const DB_NAME = 'GrandLuxuryProductDB';
-const DB_VERSION = 2; // Incremented for new object store
+const DB_VERSION = 3; // Incremented for background store
 
 export const AppDB = {
   db: null as IDBDatabase | null,
@@ -20,6 +20,9 @@ export const AppDB = {
         }
         if (!db.objectStoreNames.contains('model')) {
           db.createObjectStore('model', { keyPath: 'id' });
+        }
+        if (!db.objectStoreNames.contains('background')) {
+          db.createObjectStore('background', { keyPath: 'id' });
         }
       };
 
@@ -87,13 +90,32 @@ export const AppDB = {
     });
   },
 
+  async saveBackground(dataUrl: string): Promise<void> {
+    if (!this.db) await this.init();
+    return new Promise((resolve) => {
+      const tx = this.db!.transaction(['background'], 'readwrite');
+      tx.objectStore('background').put({ id: 'customBg', data: dataUrl });
+      tx.oncomplete = () => resolve();
+    });
+  },
+
+  async loadBackground(): Promise<string | null> {
+    if (!this.db) await this.init();
+    return new Promise((resolve) => {
+      const tx = this.db!.transaction(['background'], 'readonly');
+      const request = tx.objectStore('background').get('customBg');
+      request.onsuccess = () => resolve(request.result?.data || null);
+    });
+  },
+
   async clear(): Promise<void> {
     if (!this.db) await this.init();
     return new Promise((resolve) => {
-      const tx = this.db!.transaction(['photos', 'music', 'model'], 'readwrite');
+      const tx = this.db!.transaction(['photos', 'music', 'model', 'background'], 'readwrite');
       tx.objectStore('photos').clear();
       tx.objectStore('music').clear();
       tx.objectStore('model').clear();
+      tx.objectStore('background').clear();
       tx.oncomplete = () => resolve();
     });
   }
