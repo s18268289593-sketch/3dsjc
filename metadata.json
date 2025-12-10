@@ -1,0 +1,7 @@
+{
+  "name": "Grand Luxury Product Showcase",
+  "description": "Interactive 3D product showcase with gesture control and photo memories.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
